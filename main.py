@@ -257,8 +257,18 @@ def home():
             summary="Post a Tweet",
             tags=["Tweets"]
         )
-def post_tweet():
-    pass
+def post_tweet(tweets: Tweet = Body(...)):
+
+    with open("tweets.json", "r+", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        tweets_dict = tweets.dict()
+        tweets_dict["tweets_id"] = str(tweets_dict["tweet_id"])
+        tweets_dict["Post"] = str(tweets_dict["Post"])
+        results.append(tweets_dict)
+        f.seek(0)
+        f.write(json.dumps(results))
+
+    return tweets
 
 ### Show a Tweet
 @app.get(
