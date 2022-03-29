@@ -36,7 +36,7 @@ class User(UserBase):
 class UserRegister(User, UserLogin):
     pass
 
-
+## Tweet Models ###
 class Tweet(BaseModel):
     tweet_id: UUID = Field(...)
     content: str = Field(
@@ -210,6 +210,10 @@ def update_a_user(user_id: UUID = Path(
                 first_name=str(user_new["first_name"]),
                 last_name=str(user_new["last_name"]),
                 birth_date=str(user_new["birth_date"]))
+
+
+
+
 ## Tweets
 
 ### Show all Tweets
@@ -221,7 +225,29 @@ def update_a_user(user_id: UUID = Path(
             tags=["Tweets"]
         )
 def home():
-    return {"Twitter API": "Working!"}
+    """
+    Show All Tweets
+
+    This path operations shows all tweet in the app
+
+    Parameters:
+    - None
+
+    Returns:
+    - Description: Returns a json list with all tweets in the app
+    tweets: [
+        {
+    - tweet_id: UUID
+    - email: EmailStr
+    - first_name: str
+    - last_name: str
+    - bith_date: date
+        }
+    ]
+    """    
+    with open("tweets.json", "r", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        return results
 
 ### Post Tweet
 @app.post(
@@ -242,8 +268,21 @@ def post_tweet():
             summary="Show a Tweet",
             tags=["Tweets"]
         )
-def show_tweet():
-    pass
+def show_tweet(
+                tweet_id: UUID = Path(
+                    ...,
+                    title="User UUID",
+                    description="This is the User UUID",
+                    example="3fa85f64-5717-4562-b3fc-2c963f66afa8")
+                ):
+    with open("tweets.json", "r", encoding="utf-8") as f:
+        results = json.loads(f.read())
+    tweet = [tweet for tweet in results if tweet["tweet_id"] == str(tweet_id)]
+    return Tweet(tweet_id=tweet[0]["tweet_id"], 
+                email=tweet[0]["email"], 
+                first_name=tweet[0]["first_name"], 
+                last_name=tweet[0]["last_name"], 
+                birth_date=tweet[0]["birth_date"])
 
 ### Delete a Tweet
 @app.delete(
@@ -252,8 +291,23 @@ def show_tweet():
                 summary="Delete a Tweet",
                 tags=["Tweets"]
             )
-def delete_tweet():
-    pass
+def delete_tweet(tweet_id: UUID = Path(
+                    ...,
+                    title="Tweet UUID",
+                    description="This is the Tweet UUID",
+                    example="3fa85f64-5717-4562-b3fc-2c963f66afa8")):
+    with open("tweets.json", "r", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        results_with_tweet_deleted = [tweet for tweet in results if tweet["tweet_id"] != str(tweet_id) ]
+        tweet_to_delete = [tweet for tweet in results if tweet["tweet_id"] == str(tweet_id) ]
+    if len(tweet_to_delete) == 0:
+        return {"mensaje": f"The User with {tweet_id} not found"}
+    else:    
+        with open("tweets.json", "w", encoding="utf-8") as f:
+            f.seek(0)
+            f.write(json.dumps(results_with_tweet_deleted))
+        return {"mensaje": f"The Tweet with {tweet_id} was deleted"}
+
 
 ### Update a Tweet
 @app.put(
@@ -263,5 +317,28 @@ def delete_tweet():
             summary="Update a Tweet",
             tags=["Tweets"]
         )
-def update_tweet():
-    pass
+def update_tweet(tweet_id: UUID = Path(
+                    ...,
+                    title="Tweet UUID",
+                    description="This is the Tweet UUID",
+                    example="3fa85f64-5717-4562-b3fc-2c963f66afa8"),
+                    user: Tweet = Body(...)):
+    with open("tweets.json", "r", encoding="utf-8") as f:
+        results = json.loads(f.read())
+    tweet_new = Tweet.dict()
+    tweet_founded = [tweet for tweet in results if tweet["tweet_id"] == str(tweet_id)][0]
+    index_tweet = results.index(tweet_founded)
+    results[index_tweet]["email"] = str(tweet_new["email"])
+    results[index_tweet]["fisrt_name"] = str(tweet_new["first_name"])
+    results[index_tweet]["last_name"] = str(tweet_new["last_name"])
+    results[index_tweet]["birth_date"] = str(tweet_new["birth_date"])
+    with open("tweets.json", "w", encoding="utf-8") as f:
+        f.write(json.dumps(results))
+    return Tweet(tweet_id=str(tweet_id),
+                email=str(tweet_new["email"]),
+                first_name=str(tweet_new["first_name"]),
+                last_name=str(tweet_new["last_name"]),
+                birth_date=str(tweet_new["birth_date"]))
+
+
+
